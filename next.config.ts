@@ -1,3 +1,4 @@
+
 import type { NextConfig } from "next";
 
 const securityHeaders = [
@@ -18,6 +19,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  basePath: "/hermit",
+
   // Nonce-based CSP requires per-request rendering. Cache Components / PPR
   // (and partialPrefetching, which depends on it) is incompatible with nonces
   // because prerendered shells carry no nonce, so both stay off. The CSP
@@ -30,6 +33,7 @@ const nextConfig: NextConfig = {
       },
     },
   },
+
   async headers() {
     return [
       {
