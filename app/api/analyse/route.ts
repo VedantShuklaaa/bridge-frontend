@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { transactionResponseSchema } from "@/lib/api/schemas";
+import { serverConfig } from "@/lib/config";
 import {
   createRateLimiter,
   isAllowedChain,
@@ -7,7 +8,6 @@ import {
 } from "@/lib/security";
 
 const MAX_UPSTREAM_BYTES = 512 * 1024;
-const DEFAULT_TIMEOUT_MS = 8_000;
 const NO_STORE = "no-store";
 const COMPLETE_CACHE = "public, s-maxage=60, stale-while-revalidate=300";
 
@@ -34,29 +34,6 @@ function clientKey(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   const first = forwarded?.split(",")[0]?.trim();
   return first || request.headers.get("x-real-ip")?.trim() || "anonymous";
-}
-
-function upstreamBaseUrl(): string | null {
-  const raw = process.env.API_BASE_URL;
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const url = new URL(raw);
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return null;
-    }
-  } catch {
-    return null;
-  }
-
-  return raw.replace(/\/+$/, "");
-}
-
-function upstreamTimeoutMs(): number {
-  const value = Number(process.env.API_TIMEOUT_MS);
-  return Number.isFinite(value) && value > 0 ? value : DEFAULT_TIMEOUT_MS;
 }
 
 /** Reads at most `maxBytes`; returns null when the body exceeds the cap. */
@@ -120,24 +97,24 @@ export async function GET(request: Request) {
     return errorResponse(400, "Invalid request");
   }
 
-  const baseUrl = upstreamBaseUrl();
-  if (!baseUrl) {
-    console.error("API_BASE_URL is missing or invalid");
-    return errorResponse(503, "Service unavailable");
-  }
-
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), upstreamTimeoutMs());
+  const timer = setTimeout(
+    () => controller.abort(),
+    serverConfig.apiTimeoutMs,
+  );
 
   try {
     let upstream: Response;
     try {
       const params = new URLSearchParams({ transaction_hash: hash, chain });
-      upstream = await fetch(`${baseUrl}/api/v2/analyse?${params}`, {
-        cache: "no-store",
-        headers: { Accept: "application/json" },
-        signal: controller.signal,
-      });
+      upstream = await fetch(
+        `${serverConfig.apiBaseUrl}/api/v2/analyse?${params}`,
+        {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        },
+      );
     } catch {
       return controller.signal.aborted
         ? errorResponse(504, "Upstream timed out")

@@ -1,3 +1,4 @@
+import { publicConfig } from "@/lib/config.public";
 import { ApiError, apiErrorFromStatus } from "./errors";
 import { transactionResponseSchema, type TransactionResponse } from "./schemas";
 
@@ -19,8 +20,7 @@ function analyseUrl(hash: string): string {
     return path;
   }
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return new URL(path, base).toString();
+  return new URL(path, publicConfig.siteUrl).toString();
 }
 
 export async function fetchAnalysis(

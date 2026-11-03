@@ -41,13 +41,23 @@ export const tokenViewSchema = z.object({
 
 export type TokenView = z.infer<typeof tokenViewSchema>;
 
+export const directionSchema = z.enum(["Outbound", "Inbound"]);
+
+export type Direction = z.infer<typeof directionSchema>;
+
+export const viaSchema = z
+  .object({
+    name: z.string(),
+    reference: z.string().nullable(),
+  })
+  .nullable();
+
+export type Via = z.infer<typeof viaSchema>;
+
 export const transferViewSchema = z.object({
   protocol: z.string(),
-  // TODO(verify): backend serialises `Direction` as "Outbound" | "Inbound";
-  // kept loose until a real response is checked.
-  direction: z.unknown(),
-  // TODO(verify): backend serialises `Option<Via>`; kept loose.
-  via: z.unknown(),
+  direction: directionSchema,
+  via: viaSchema,
   observed_tx_hash: z.string(),
   event_index: z.number().int().nonnegative(),
   // TODO(verify): backend serialises a protocol-tagged `MessageId`; kept loose.
@@ -69,12 +79,14 @@ export const transferViewSchema = z.object({
 
 export type TransferView = z.infer<typeof transferViewSchema>;
 
+export const txStatusSchema = z.enum(["Success", "Failed"]);
+
+export type TxStatus = z.infer<typeof txStatusSchema>;
+
 export const transactionResponseSchema = z.object({
   hash: z.string(),
   chain: chainViewSchema,
-  // TODO(verify): backend `TxStatus` is "Success" | "Failed"; kept loose until a
-  // real response is checked.
-  status: z.unknown(),
+  status: txStatusSchema,
   slot: z.number().int().nonnegative(),
   timestamp: z.number().int().nullable(),
   fee_lamports: z.number().int().nonnegative(),

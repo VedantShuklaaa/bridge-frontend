@@ -1,12 +1,10 @@
 import type { MetadataRoute } from "next";
-
-// Placeholder: moved onto lib/seo.ts siteConfig in the SEO chunk.
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { siteConfig } from "@/lib/seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: baseUrl,
+      url: siteConfig.url,
       changeFrequency: "weekly",
       priority: 1,
     },

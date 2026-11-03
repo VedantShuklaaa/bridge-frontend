@@ -1,9 +1,27 @@
 import type { NextConfig } from "next";
 
+const securityHeaders = [
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains",
+  },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=()",
+  },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+];
+
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  // Nonce-based CSP requires per-request rendering. Cache Components / PPR
+  // (and partialPrefetching, which depends on it) is incompatible with nonces
+  // because prerendered shells carry no nonce, so both stay off. The CSP
+  // itself is set per request in proxy.ts.
   turbopack: {
     rules: {
       "*.css": {
@@ -11,6 +29,14 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 

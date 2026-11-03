@@ -1,11 +1,13 @@
 import type { MetadataRoute } from "next";
+import { siteConfig } from "@/lib/seo";
 
-// Placeholder: expanded with disallow rules and the sitemap in the SEO chunk.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: ["/api/", "/live"],
     },
+    sitemap: `${siteConfig.url}/sitemap.xml`,
   };
 }
