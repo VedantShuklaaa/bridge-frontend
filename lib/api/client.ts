@@ -36,7 +36,10 @@ function analyseUrl(hash: string): string {
     return path;
   }
 
-  return new URL(path, publicConfig.siteUrl).toString();
+  return new URL(
+    path.replace(/^\/+/, ""),
+    `${publicConfig.siteUrl}/`,
+  ).toString();
 }
 
 export async function fetchAnalysis(
