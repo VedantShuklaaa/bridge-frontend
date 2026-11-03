@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { NavbarSearch } from "./navbar-search";
 import { ThemeToggle } from "./theme-toggle";
 
 export function Navbar() {
@@ -45,8 +44,6 @@ export function Navbar() {
         >
           b
         </Link>
-
-        <NavbarSearch />
 
         <Link
           href="/live"
