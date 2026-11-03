@@ -77,9 +77,9 @@ lib/
 
 | Endpoint | Notes |
 | --- | --- |
-| `GET /api/v2/analyse?transaction_hash=<sig>&chain=solana` | Use this. `TransactionResponse` with `transfers[]` (`TransferView`) |
-| `GET /api/v1/analyse?...` | Frozen legacy shape. Do not build on it |
-| `WS /api/v1/stream` | Pushes each persisted tx as JSON text. Payload is the **v1 tx shape**, not v2. Lossy. Check a real message before typing it |
+| `GET /api/v2/transactions/analyse?transaction_hash=<sig>&chain=solana` | Use this. `TransactionResponse` with `transfers[]` (`TransferView`) |
+| `GET /api/v1/transactions/analyse?...` | Frozen legacy shape. Do not build on it |
+| `WS /api/v1/transactions/stream` | Pushes each persisted tx as JSON text. Payload is the **v1 tx shape**, not v2. Lossy. Check a real message before typing it |
 | `GET /health` | Health |
 
 There is **no list, search-by-wallet or stats endpoint yet**. Anything needing

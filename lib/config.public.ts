@@ -23,7 +23,9 @@ const publicEnvSchema = z.object({
 
 const parsed = publicEnvSchema.safeParse({
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  wsUrl: process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/api/v1/stream",
+  wsUrl:
+    process.env.NEXT_PUBLIC_WS_URL ??
+    "ws://localhost:8080/api/v1/transactions/stream",
 });
 
 if (!parsed.success) {

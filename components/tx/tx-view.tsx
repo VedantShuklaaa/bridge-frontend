@@ -6,6 +6,7 @@ import type {
   TransferView,
 } from "@/lib/api/schemas";
 import { safeExternalUrl } from "@/lib/security";
+import { shortenAddress } from "@/lib/utils";
 
 /**
  * TODO(design): temporary flat details view. It renders the real v2 payload
@@ -90,6 +91,10 @@ const ERROR_COPY: Record<ApiErrorKind, { title: string; body: string }> = {
     title: "Indexer unavailable",
     body: "The indexer is temporarily unavailable or overloaded. Try again shortly.",
   },
+  misconfigured: {
+    title: "Indexer misconfigured",
+    body: "The indexer answered, but its analyse route does not exist. This is a server configuration problem, not a missing transaction.",
+  },
   timeout: {
     title: "Request timed out",
     body: "The indexer took too long to respond. Try again in a moment.",
@@ -166,9 +171,13 @@ function chainLabel(chain: TransferView["source"]): string {
 
 function amountLabel(transfer: TransferView): string {
   const amount = transfer.amount_formatted ?? "Amount unknown";
-  return transfer.token_symbol
-    ? `${amount} ${transfer.token_symbol}`
-    : amount;
+
+  if (transfer.token_symbol) {
+    return `${amount} ${transfer.token_symbol}`;
+  }
+
+  const tokenAddress = transfer.token?.address;
+  return tokenAddress ? `${amount} ${shortenAddress(tokenAddress)}` : amount;
 }
 
 function ExternalLink({

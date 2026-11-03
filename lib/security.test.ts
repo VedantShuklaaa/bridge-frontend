@@ -41,6 +41,13 @@ describe("safeExternalUrl", () => {
       "https://solscan.io/tx/abc",
     );
     expect(
+      safeExternalUrl(
+        "https://explorer.solana.com/tx/5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW",
+      ),
+    ).toBe(
+      "https://explorer.solana.com/tx/5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW",
+    );
+    expect(
       safeExternalUrl("https://wormholescan.io/#/tx/abc?network=Mainnet"),
     ).not.toBeNull();
     expect(safeExternalUrl("https://SOLSCAN.IO/tx/abc")).not.toBeNull();

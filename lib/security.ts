@@ -22,6 +22,7 @@ export function isAllowedChain(value: unknown): value is AllowedChain {
  */
 export const EXPLORER_HOST_ALLOWLIST: ReadonlySet<string> = new Set([
   "solscan.io",
+  "explorer.solana.com",
   "etherscan.io",
   "basescan.org",
   "arbiscan.io",
