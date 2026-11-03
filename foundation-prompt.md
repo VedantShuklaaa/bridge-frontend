@@ -70,7 +70,7 @@ No `page.tsx` or `layout.tsx` may contain `"use client"`.
 
 ## 5. Typed API layer (`lib/api/`)
 
-* `schemas.ts`: zod schemas and inferred types for the indexer's `/api/v2/analyse`
+* `schemas.ts`: zod schemas and inferred types for the indexer's `/api/v2/transactions/analyse`
   response: `TransactionResponse` { hash, chain: ChainView, status, slot, timestamp
   (number|null), fee\_lamports, signer (string|null), transfers: TransferView\[] },
   `TransferView` { protocol, direction, via, observed\_tx\_hash, event\_index, message\_id,
@@ -99,7 +99,7 @@ No `page.tsx` or `layout.tsx` may contain `"use client"`.
 * Validate with `lib/security.ts`: tx hash must be a Solana signature (base58 charset,
   length 86 to 88); `chain` must be in an allowlist (`["solana"]`). Return 400 with a
   generic JSON error otherwise.
-* Fetch `${API_BASE_URL}/api/v2/analyse` with `encodeURIComponent` params, an
+* Fetch `${API_BASE_URL}/api/v2/transactions/analyse` with `encodeURIComponent` params, an
   `AbortController` timeout from `API_TIMEOUT_MS`, `cache: "no-store"`, no forwarded
   client headers. Cap the upstream body size (reject above ~512 KB).
 * Parse the upstream JSON with the zod schema before returning it. On parse failure

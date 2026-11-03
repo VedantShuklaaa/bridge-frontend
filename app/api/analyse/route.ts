@@ -81,6 +81,20 @@ async function readCapped(
   return new TextDecoder().decode(bytes);
 }
 
+/**
+ * A missing transaction carries a JSON error body (`TX_NOT_FOUND`), while an
+ * unknown route (a wrong `API_BASE_URL` path) is answered by the framework's
+ * bare 404 with an empty body. Tell them apart before reporting "not found".
+ */
+async function isEmptyBody(response: Response): Promise<boolean> {
+  try {
+    const body = await readCapped(response, MAX_UPSTREAM_BYTES);
+    return body !== null && body.trim() === "";
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
   const rate = limiter.check(clientKey(request));
   if (!rate.allowed) {
@@ -108,7 +122,7 @@ export async function GET(request: Request) {
     try {
       const params = new URLSearchParams({ transaction_hash: hash, chain });
       upstream = await fetch(
-        `${serverConfig.apiBaseUrl}/api/v2/analyse?${params}`,
+        `${serverConfig.apiBaseUrl}/api/v2/transactions/analyse?${params}`,
         {
           cache: "no-store",
           headers: { Accept: "application/json" },
@@ -123,6 +137,9 @@ export async function GET(request: Request) {
 
     if (!upstream.ok) {
       if (upstream.status === 404) {
+        if (await isEmptyBody(upstream)) {
+          return errorResponse(502, "upstream_misconfigured");
+        }
         return errorResponse(404, "Not found");
       }
 

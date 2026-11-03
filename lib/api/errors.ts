@@ -3,6 +3,7 @@ export type ApiErrorKind =
   | "not_found"
   | "rate_limited"
   | "unavailable"
+  | "misconfigured"
   | "timeout"
   | "network"
   | "bad_response";
@@ -28,8 +29,23 @@ export class ApiError extends Error {
   }
 }
 
-/** Maps an HTTP status from our own `/api/analyse` route to an `ApiError`. */
-export function apiErrorFromStatus(status: number): ApiError {
+/**
+ * Maps an HTTP status from our own `/api/analyse` route to an `ApiError`.
+ * `errorCode` is the proxy's machine-readable code when it distinguishes the
+ * cause inside a status (currently `upstream_misconfigured` on a 502).
+ */
+export function apiErrorFromStatus(
+  status: number,
+  errorCode?: string,
+): ApiError {
+  if (status === 502 && errorCode === "upstream_misconfigured") {
+    return new ApiError(
+      "misconfigured",
+      "The indexer is reachable but its analyse route is missing. This is a server configuration problem, not a missing transaction.",
+      { status },
+    );
+  }
+
   switch (status) {
     case 400:
       return new ApiError(

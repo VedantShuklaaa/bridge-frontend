@@ -1,6 +1,22 @@
+import { z } from "zod";
 import { publicConfig } from "@/lib/config.public";
 import { ApiError, apiErrorFromStatus } from "./errors";
 import { transactionResponseSchema, type TransactionResponse } from "./schemas";
+
+/**
+ * Our proxy's machine-readable error body. Only the code is used; the human
+ * copy comes from `errors.ts`, never from the response text.
+ */
+const errorBodySchema = z.object({ error: z.string() });
+
+async function errorCode(response: Response): Promise<string | undefined> {
+  try {
+    const parsed = errorBodySchema.safeParse(await response.json());
+    return parsed.success ? parsed.data.error : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Calls our own `/api/analyse` route handler, never the indexer directly.
@@ -47,7 +63,7 @@ export async function fetchAnalysis(
   }
 
   if (!response.ok) {
-    throw apiErrorFromStatus(response.status);
+    throw apiErrorFromStatus(response.status, await errorCode(response));
   }
 
   let body: unknown;
