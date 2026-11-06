@@ -4,7 +4,6 @@ import type { TransferView } from "./schemas";
 export * from "./schemas";
 export * from "./errors";
 export * from "./client";
-export * from "./live";
 
 export type TransferListQuery = {
   limit?: number;

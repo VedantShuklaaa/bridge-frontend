@@ -9,6 +9,16 @@ export const metadata: Metadata = buildMetadata({
   noindex: true,
 });
 
-export default function LivePage() {
-  return <LiveView />;
+type LivePageProps = {
+  searchParams: Promise<{ page?: string | string[] }>;
+};
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function LivePage({ searchParams }: LivePageProps) {
+  const { page } = await searchParams;
+
+  return <LiveView pageParam={firstValue(page)} />;
 }
