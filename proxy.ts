@@ -10,8 +10,12 @@ export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const isDev = process.env.NODE_ENV === "development";
 
-  // Only same-origin API traffic and the exact configured stream origin.
-  const connectSources = new Set(["'self'", publicConfig.wsOrigin]);
+  // Only same-origin traffic and the exact configured stream and API origins.
+  const connectSources = new Set([
+    "'self'",
+    publicConfig.wsOrigin,
+    publicConfig.apiOrigin,
+  ]);
   if (isDev) {
     const wsScheme = request.nextUrl.protocol === "https:" ? "wss" : "ws";
     connectSources.add(`${wsScheme}://${request.nextUrl.host}`);
