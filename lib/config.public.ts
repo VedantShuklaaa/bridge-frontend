@@ -37,7 +37,10 @@ const parsed = publicEnvSchema.safeParse({
 });
 
 if (!parsed.success) {
-  throw new Error("Invalid NEXT_PUBLIC_* environment configuration.");
+  throw new Error(
+    "Invalid NEXT_PUBLIC_* environment configuration: " +
+    JSON.stringify(parsed.error.flatten().fieldErrors),
+  );
 }
 
 const site = new URL(parsed.data.siteUrl);
