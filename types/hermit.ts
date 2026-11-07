@@ -94,6 +94,13 @@ export const streamFrameSchema = z.object({
   signer: z.string().nullable(),
   bridge_event: bridgeEventSchema.nullable(),
   bridge_transfer: bridgeTransferSchema.nullable(),
+  /**
+   * Epoch milliseconds when the indexer first saw this transfer. Present on
+   * `/api/v2/transfers/live` items; legacy WS frames omit it.
+   */
+  first_seen_at: z.number().int().nonnegative().optional(),
+  /** Epoch milliseconds of the latest indexer update to this transfer. */
+  updated_at: z.number().int().nonnegative().optional(),
 });
 
 export type StreamFrame = z.infer<typeof streamFrameSchema>;
@@ -105,8 +112,6 @@ export const storeEntrySchema = z.object({
 });
 
 export type StoreEntry = z.infer<typeof storeEntrySchema>;
-
-export const storedEntriesSchema = z.array(storeEntrySchema);
 
 export type LiveConnectionStatus =
   | "connecting"

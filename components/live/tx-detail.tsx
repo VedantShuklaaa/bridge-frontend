@@ -35,8 +35,8 @@ export function TxDetail({ hash }: { hash: string }) {
   const now = useNow();
 
   useEffect(() => {
-    // The store is hydrated before React runs; the extra lookup avoids a
-    // redundant request when the snapshot has not caught up yet.
+    // The feed may already hold this hash; the extra lookup avoids a redundant
+    // request while the global snapshot is still arriving.
     if (entry || findLiveEntry(hash)) {
       return;
     }

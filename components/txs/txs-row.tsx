@@ -33,7 +33,13 @@ function amountLabel(entry: StoreEntry): string | null {
     : `${transfer.amount_formatted} ${transfer.token_symbol}`;
 }
 
-export function TxsRow({ entry }: { entry: StoreEntry }) {
+export function TxsRow({
+  entry,
+  clockOffsetMs,
+}: {
+  entry: StoreEntry;
+  clockOffsetMs: number | null;
+}) {
   const now = useNow();
   const { frame, receivedAt } = entry;
   const transfer = frame.bridge_transfer;
@@ -43,12 +49,18 @@ export function TxsRow({ entry }: { entry: StoreEntry }) {
   }
 
   const sourceHash = transfer.source_tx_hash ?? frame.hash;
+  const firstSeenAt = frame.first_seen_at;
+  // `first_seen_at` is on the indexer's clock; subtract the measured skew to
+  // compare it with this browser's clock. Without a successful snapshot there
+  // is no skew measurement, so fall back to when this browser received the row.
   const detectedAt =
-    receivedAt > 0
-      ? receivedAt
-      : frame.timestamp !== null
-        ? frame.timestamp * 1000
-        : now;
+    firstSeenAt !== undefined && clockOffsetMs !== null
+      ? firstSeenAt - clockOffsetMs
+      : receivedAt > 0
+        ? receivedAt
+        : frame.timestamp !== null
+          ? frame.timestamp * 1000
+          : now;
   const amount = amountLabel(entry);
 
   return (
