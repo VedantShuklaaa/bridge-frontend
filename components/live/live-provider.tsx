@@ -33,12 +33,11 @@ const LiveContext = createContext<LiveContextValue | null>(null);
 
 /**
  * Owns the live feed for the whole session. Mounted once in the root layout, so
- * navigating away from `/live` keeps the socket and the entries alive.
+ * navigating away from `/txs` keeps the socket and the entries alive.
  */
 export function LiveProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const onLiveRoute =
-    pathname === "/live" || pathname.startsWith("/live/");
+  const onLiveRoute = pathname === "/txs";
 
   const entries = useSyncExternalStore(
     subscribeEntries,

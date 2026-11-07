@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { TxView } from "@/components/tx/tx-view";
+import { TxDetail } from "@/components/live/tx-detail";
 import { isValidSolanaSignature } from "@/lib/security";
 import { buildMetadata, shortenHash } from "@/lib/seo";
 
@@ -17,8 +17,7 @@ export async function generateMetadata({
   return buildMetadata({
     title: `Transaction ${short}`,
     description: `Bridge transfers for Solana transaction ${short}.`,
-    path: `/tx/${encodeURIComponent(hash)}`,
-    // TODO(design): index once the page renders the real transfer data.
+    path: `/txs/${encodeURIComponent(hash)}`,
     noindex: true,
   });
 }
@@ -32,5 +31,5 @@ export default async function TransactionPage({
     notFound();
   }
 
-  return <TxView hash={hash} />;
+  return <TxDetail key={hash} hash={hash} />;
 }

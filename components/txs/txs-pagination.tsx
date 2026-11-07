@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 function pageHref(page: number): string {
-  return page <= 1 ? "/live" : `/live?page=${page}`;
+  return page <= 1 ? "/txs" : `/txs?page=${page}`;
 }
 
-export function LivePagination({
+export function TxsPagination({
   page,
   totalPages,
 }: {
@@ -18,7 +18,7 @@ export function LivePagination({
 
   return (
     <nav
-      aria-label="Live feed pagination"
+      aria-label="Transaction feed pagination"
       className="flex items-center justify-between gap-3"
     >
       {page > 1 ? (

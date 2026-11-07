@@ -35,7 +35,7 @@ const getMountedSnapshot = () => true;
 const getServerMountedSnapshot = () => false;
 
 /**
- * Reads the current route so the search field can mirror `/tx/[hash]` without
+ * Reads the current route so the search field can mirror `/txs/[hash]` without
  * navigating. The field is keyed by that hash, which resets its state on every
  * transaction change without a set-state-in-effect.
  */
@@ -117,7 +117,7 @@ function SearchField({ initialValue }: { initialValue: string }) {
     setError(null);
     setQuery(trimmed);
     startTransition(() => {
-      router.push(`/tx/${encodeURIComponent(trimmed)}`);
+      router.push(`/txs/${encodeURIComponent(trimmed)}`);
     });
   }
 
