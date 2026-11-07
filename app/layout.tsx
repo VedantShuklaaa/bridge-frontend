@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { Geist_Mono, Inter, Inter_Tight } from "next/font/google";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
-import { Footer } from "@/components/layout/footer";
 import { JsonLd } from "@/components/layout/json-ld";
-import { Navbar } from "@/components/layout/navbar";
+import { Navbar } from "@/components/layout/navbar/navbar";
 import { Providers } from "@/components/layout/providers";
 import { LiveProvider } from "@/components/live/live-provider";
 import { siteConfig } from "@/lib/seo";
@@ -77,10 +76,9 @@ export default async function RootLayout({
               Skip to content
             </a>
             <Navbar />
-            <main id="content" className="flex-1 pt-24">
+            <main id="content" className="flex-1">
               {children}
             </main>
-            <Footer />
           </LiveProvider>
         </Providers>
         <JsonLd />

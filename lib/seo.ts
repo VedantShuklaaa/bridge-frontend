@@ -62,7 +62,7 @@ export function websiteJsonLd() {
     url: siteConfig.url,
     potentialAction: {
       "@type": "SearchAction",
-      target: `${siteConfig.url}/tx/{transaction_hash}`,
+      target: `${siteConfig.url}/txs/{transaction_hash}`,
     },
   };
 }

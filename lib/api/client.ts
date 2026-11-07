@@ -22,8 +22,8 @@ async function errorCode(response: Response): Promise<string | undefined> {
  * Calls our own `/api/analyse` route handler, never the indexer directly.
  *
  * On the server the route needs an absolute URL, so it is built from
- * NEXT_PUBLIC_SITE_URL. In the browser a relative URL keeps the request on the
- * current origin.
+ * NEXT_PUBLIC_SITE_URL. In the browser the request stays on the current origin,
+ * prefixed with the app's `basePath` so it reaches the route handler.
  */
 function analyseUrl(hash: string): string {
   const params = new URLSearchParams({
@@ -33,7 +33,9 @@ function analyseUrl(hash: string): string {
   const path = `/api/analyse?${params.toString()}`;
 
   if (typeof window !== "undefined") {
-    return path;
+    // Inlined at build time by Next from `basePath` in next.config.ts.
+    const basePath = process.env.__NEXT_ROUTER_BASEPATH ?? "";
+    return `${basePath}${path}`;
   }
 
   return new URL(

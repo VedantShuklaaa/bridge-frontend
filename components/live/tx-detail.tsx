@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useNow } from "@/hooks/use-now";
+import { fetchAnalysis } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
-import { fetchHermitAnalysis } from "@/lib/api/hermit";
 import type { TransactionResponse } from "@/lib/api/schemas";
 import { detailFromEntry, detailFromResponse } from "@/lib/detail";
 import { shortHash } from "@/lib/format";
@@ -43,7 +43,7 @@ export function TxDetail({ hash }: { hash: string }) {
 
     const controller = new AbortController();
 
-    fetchHermitAnalysis(hash, controller.signal)
+    fetchAnalysis(hash, controller.signal)
       .then((response) => {
         if (!controller.signal.aborted) {
           setFetched({ attempt, response });
@@ -86,18 +86,18 @@ export function TxDetail({ hash }: { hash: string }) {
       router.back();
       return;
     }
-    router.push("/live");
+    router.push("/txs");
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-12">
+    <div className="mx-auto w-full max-w-5xl px-4 pt-28 pb-12">
       <div className="mb-6 flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={goBack}
           className="rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:active:bg-muted"
         >
-          ← Back to live
+          ← Back to transactions
         </button>
         <span className="font-mono text-xs text-muted-foreground">
           {shortHash(hash, 6, 6)}
