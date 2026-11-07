@@ -28,7 +28,7 @@ const COLUMN_TITLES = [
  * template so the six fields stay aligned and evenly spaced.
  */
 export function TxsFeed({ pageParam }: { pageParam?: string }) {
-  const { entries, status } = useLive();
+  const { entries, status, clockOffsetMs } = useLive();
 
   const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
   const page = Math.min(Math.max(parsePage(pageParam), 1), totalPages);
@@ -77,7 +77,11 @@ export function TxsFeed({ pageParam }: { pageParam?: string }) {
             <ul>
               <AnimatePresence initial={false}>
                 {rows.map((entry) => (
-                  <TxsRow key={entry.frame.hash} entry={entry} />
+                  <TxsRow
+                    key={entry.frame.hash}
+                    entry={entry}
+                    clockOffsetMs={clockOffsetMs}
+                  />
                 ))}
               </AnimatePresence>
             </ul>

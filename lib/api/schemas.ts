@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { streamFrameSchema } from "@/types/hermit";
 
 /**
  * Schemas for `GET /api/v2/transactions/analyse` (bridgeIndexer
@@ -113,3 +114,20 @@ export const transactionResponseSchema = z.object({
 });
 
 export type TransactionResponse = z.infer<typeof transactionResponseSchema>;
+
+/**
+ * `GET /api/v2/transfers/live` — the bounded, globally shared snapshot.
+ *
+ * Each item is the same frame the WebSocket broadcasts, plus optional
+ * `first_seen_at` / `updated_at` epoch-millisecond timestamps. `server_time` is
+ * also epoch milliseconds and is used to correct for clock skew between the
+ * indexer and the browser.
+ */
+export const liveSnapshotSchema = z.object({
+  items: z.array(streamFrameSchema),
+  next_cursor: z.string().nullable(),
+  total: z.number().int().nonnegative(),
+  server_time: z.number().int().nonnegative(),
+});
+
+export type LiveSnapshot = z.infer<typeof liveSnapshotSchema>;
