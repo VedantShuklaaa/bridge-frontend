@@ -1,7 +1,7 @@
 "use client";
 
 import { MotionConfig } from "framer-motion";
-//import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 
 export function Providers({
@@ -12,14 +12,15 @@ export function Providers({
   nonce?: string;
 }) {
   return (
-    //<ThemeProvider
-    //  attribute="class"
-    //  defaultTheme="system"
-    //  enableSystem
-    //  disableTransitionOnChange
-    //  nonce={nonce}
-    //>
-    <MotionConfig reducedMotion="user">{children}</MotionConfig>
-    //</ThemeProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      forcedTheme="light"
+      enableSystem={false}
+      disableTransitionOnChange
+      nonce={nonce}
+    >
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
+    </ThemeProvider>
   );
 }

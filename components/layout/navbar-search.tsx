@@ -3,7 +3,6 @@
 import { BorderBeam } from "border-beam";
 import { useReducedMotion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import {
   type ChangeEvent,
   type ClipboardEvent,
@@ -13,7 +12,6 @@ import {
   useEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   useTransition,
 } from "react";
 import { isValidSolanaSignature } from "@/lib/security";
@@ -24,15 +22,6 @@ const MAX_LENGTH = 128;
 const SEARCH_RADIUS = 22;
 const INVALID_MESSAGE =
   "That is not a Solana transaction signature. Expected 86–88 base58 characters.";
-
-/**
- * Hydration-safe "has the client mounted" flag. BorderBeam inlines its
- * theme-dependent stylesheet, so the server and the first client render must
- * agree; next-themes only resolves a theme after mount.
- */
-const subscribeToMount = () => () => {};
-const getMountedSnapshot = () => true;
-const getServerMountedSnapshot = () => false;
 
 /**
  * Reads the current route so the search field can mirror `/txs/[hash]` without
@@ -50,7 +39,6 @@ export function NavbarSearch() {
 
 function SearchField({ initialValue }: { initialValue: string }) {
   const router = useRouter();
-  const { resolvedTheme } = useTheme();
   const reduceMotion = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -59,14 +47,7 @@ function SearchField({ initialValue }: { initialValue: string }) {
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const mounted = useSyncExternalStore(
-    subscribeToMount,
-    getMountedSnapshot,
-    getServerMountedSnapshot,
-  );
 
-  // Dark until next-themes has resolved the theme on the client.
-  const beamTheme = mounted && resolvedTheme === "light" ? "light" : "dark";
   const beamActive =
     reduceMotion !== true && (focused || hovered || isPending);
 
@@ -184,7 +165,7 @@ function SearchField({ initialValue }: { initialValue: string }) {
         colorVariant="mono"
         strength={0.7}
         borderRadius={SEARCH_RADIUS}
-        theme={beamTheme}
+        theme="light"
         active={beamActive}
         className="w-full"
       >

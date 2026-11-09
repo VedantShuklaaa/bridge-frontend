@@ -1,11 +1,5 @@
+import { permanentRedirect } from "next/navigation";
 
-
-
-
-export default function Page() {
-	return (
-		<div className="h-screen w-full">
-
-		</div>
-	)
+export default function DocsIndex() {
+	permanentRedirect("/docs/overview");
 }
