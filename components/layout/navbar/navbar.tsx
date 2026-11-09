@@ -14,6 +14,10 @@ function isActive(item: NavItem, pathname: string) {
 export function Navbar() {
   const pathname = usePathname();
 
+  // Docs renders its own header and sidebar shell; the floating navbar would
+  // collide with it.
+  if (pathname === "/docs" || pathname.startsWith("/docs/")) return null;
+
   return (
     <header className="pointer-events-none fixed inset-x-0 top-[max(1.5rem,env(safe-area-inset-bottom))] z-50 flex justify-center px-3">
       <motion.nav

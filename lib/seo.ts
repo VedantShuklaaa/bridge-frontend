@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { publicConfig } from "@/lib/config.public";
 
 export const siteConfig = {
-  name: "bridgeIndexer",
+  name: "Hermit",
   description:
     "Search a Solana transaction and inspect every bridge transfer it contains.",
   url: publicConfig.siteUrl,
