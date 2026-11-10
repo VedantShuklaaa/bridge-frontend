@@ -124,7 +124,16 @@ export type TransactionResponse = z.infer<typeof transactionResponseSchema>;
  * indexer and the browser.
  */
 export const liveSnapshotSchema = z.object({
-  items: z.array(streamFrameSchema),
+  items: z.array(z.unknown()).transform((raw) =>
+    raw.flatMap((item) => {
+      const parsed = streamFrameSchema.safeParse(item);
+      if (!parsed.success) {
+        console.warn("live: skipped invalid item", parsed.error.issues[0]?.path);
+        return [];
+      }
+      return [parsed.data];
+    }),
+  ),
   next_cursor: z.string().nullable(),
   total: z.number().int().nonnegative(),
   server_time: z.number().int().nonnegative(),
