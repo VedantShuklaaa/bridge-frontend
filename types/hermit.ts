@@ -20,18 +20,22 @@ export const CHAINS = [
   "Optimism",
   "Gnosis",
   "Base",
+  "Near",
 ] as const;
 
-export type Chain = (typeof CHAINS)[number];
+/** Chains with dedicated labels/icons. The backend may send others. */
+export type KnownChain = (typeof CHAINS)[number];
 
-export const chainSchema = z.enum(CHAINS);
+export function isKnownChain(value: unknown): value is KnownChain {
+  return typeof value === "string" && (CHAINS as readonly string[]).includes(value);
+}
 
 /**
- * A chain in the protocol's namespace. The backend serialises `Unknown` as an
- * externally tagged object, everything else as a bare string.
+ * Any chain name the indexer sends. The registry is dynamic, so this is not a
+ * closed enum. Unknown numeric ids arrive as `{ Unknown: n }`.
  */
 export const chainIdSchema = z.union([
-  chainSchema,
+  z.string().min(1),
   z.object({ Unknown: z.number().int().nonnegative() }),
 ]);
 
@@ -85,7 +89,7 @@ export type BridgeEvent = z.infer<typeof bridgeEventSchema>;
 
 export const streamFrameSchema = z.object({
   hash: z.string().min(1),
-  chain: chainSchema,
+  chain: z.string().min(1),
   status: txStatusSchema,
   slot: z.number().int().nonnegative(),
   /** Unix seconds. */
