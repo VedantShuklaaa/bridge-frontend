@@ -1,15 +1,27 @@
-import type {
-  ChainView,
-  TransactionResponse,
-  TransferView,
+import {
+  cctpMessageIdSchema,
+  debridgeMessageIdSchema,
+  mayanMessageIdSchema,
+  wormholeMessageIdSchema,
+  type ChainView,
+  type TransactionResponse,
+  type TransferView,
 } from "@/lib/api/schemas";
 import { formatChain } from "@/lib/format";
 import type { BridgeEvent, ChainId, StoreEntry } from "@/types/hermit";
 
+export type DetailMessageField = {
+  label: string;
+  value: string;
+  mono?: boolean;
+  truncate?: boolean;
+  copy?: boolean;
+};
+
+/** A protocol-specific message identity, rendered as one section. */
 export type DetailMessage = {
-  emitterChain: string;
-  emitterAddress: string;
-  sequence: string;
+  title: string;
+  fields: DetailMessageField[];
 };
 
 /**
@@ -50,24 +62,112 @@ function directionFor(source: ChainId, destination: ChainId): string {
     : "Outbound";
 }
 
-function protocolLabel(protocol: string): string {
-  return protocol === "wormhole" ? "Wormhole" : protocol;
+/** Prefer the backend's display name; fall back for older responses. */
+function protocolLabel(transfer: TransferView): string {
+  if (transfer.protocol_name) {
+    return transfer.protocol_name;
+  }
+
+  return transfer.protocol === "wormhole" ? "Wormhole" : transfer.protocol;
 }
 
+const CHAIN_ID_NOUN: Record<string, string> = {
+  wormhole: "Wormhole chain",
+  cctp: "CCTP domain",
+  debridge: "deBridge chain",
+};
+
 function formatChainView(view: ChainView): string {
-  return view.chain?.name ?? `${view.protocol} ${view.id}`;
+  if (view.chain) {
+    return view.chain.name;
+  }
+
+  return `Unknown (${CHAIN_ID_NOUN[view.protocol] ?? view.protocol} ${view.id})`;
+}
+
+function wormholeMessage(
+  emitterChain: string,
+  emitterAddress: string,
+  sequence: string,
+): DetailMessage {
+  return {
+    title: "Wormhole message",
+    fields: [
+      { label: "Emitter chain", value: emitterChain },
+      {
+        label: "Emitter address",
+        value: emitterAddress,
+        mono: true,
+        truncate: true,
+        copy: true,
+      },
+      { label: "Sequence", value: sequence, mono: true },
+    ],
+  };
 }
 
 function messageFromTransfer(transfer: TransferView): DetailMessage | null {
-  if (transfer.message_id.protocol !== "wormhole") {
-    return null;
+  const id = transfer.message_id;
+
+  const wormhole = wormholeMessageIdSchema.safeParse(id);
+  if (wormhole.success) {
+    return wormholeMessage(
+      String(wormhole.data.emitter_chain),
+      wormhole.data.emitter_address,
+      String(wormhole.data.sequence),
+    );
   }
 
-  return {
-    emitterChain: String(transfer.message_id.emitter_chain),
-    emitterAddress: transfer.message_id.emitter_address,
-    sequence: String(transfer.message_id.sequence),
-  };
+  const cctp = cctpMessageIdSchema.safeParse(id);
+  if (cctp.success) {
+    return {
+      title: "CCTP message",
+      fields: [
+        { label: "Source domain", value: String(cctp.data.source_domain) },
+        {
+          label: "Nonce",
+          value: cctp.data.nonce,
+          mono: true,
+          truncate: true,
+          copy: true,
+        },
+      ],
+    };
+  }
+
+  const debridge = debridgeMessageIdSchema.safeParse(id);
+  if (debridge.success) {
+    return {
+      title: "deBridge order",
+      fields: [
+        {
+          label: "Order ID",
+          value: debridge.data.order_id,
+          mono: true,
+          truncate: true,
+          copy: true,
+        },
+      ],
+    };
+  }
+
+  const mayan = mayanMessageIdSchema.safeParse(id);
+  if (mayan.success) {
+    return {
+      title: "Mayan order",
+      fields: [
+        {
+          label: "Order hash",
+          value: mayan.data.order_hash,
+          mono: true,
+          truncate: true,
+          copy: true,
+        },
+      ],
+    };
+  }
+
+  return null;
 }
 
 export function detailFromEntry(entry: StoreEntry): DetailView {
@@ -86,6 +186,7 @@ export function detailFromEntry(entry: StoreEntry): DetailView {
     direction: transfer
       ? directionFor(transfer.source_chain, transfer.destination_chain)
       : null,
+    // Live frames are Wormhole-shaped and carry no display name yet.
     protocol: "Wormhole",
     transferStatus: transfer?.status ?? null,
     transferCount: transfer ? 1 : 0,
@@ -100,11 +201,11 @@ export function detailFromEntry(entry: StoreEntry): DetailView {
     amountFormatted: transfer?.amount_formatted ?? null,
     amountRaw: transfer?.amount ?? null,
     message: transfer
-      ? {
-          emitterChain: String(transfer.message_id.emitter_chain),
-          emitterAddress: transfer.message_id.emitter_address,
-          sequence: String(transfer.message_id.sequence),
-        }
+      ? wormholeMessage(
+        String(transfer.message_id.emitter_chain),
+        transfer.message_id.emitter_address,
+        String(transfer.message_id.sequence),
+      )
       : null,
     bridgeEvent: frame.bridge_event,
     raw: frame,
@@ -126,7 +227,7 @@ export function detailFromResponse(response: TransactionResponse): DetailView {
       ? formatChainView(transfer.destination)
       : null,
     direction: transfer?.direction ?? null,
-    protocol: transfer ? protocolLabel(transfer.protocol) : "Wormhole",
+    protocol: transfer ? protocolLabel(transfer) : "Wormhole",
     transferStatus: transfer?.status ?? null,
     transferCount: response.transfers.length,
     sourceTxHash: transfer?.source_tx_hash ?? null,

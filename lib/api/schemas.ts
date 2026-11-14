@@ -56,24 +56,48 @@ export const viaSchema = z
 
 export type Via = z.infer<typeof viaSchema>;
 
+export const wormholeMessageIdSchema = z.object({
+  protocol: z.literal("wormhole"),
+  emitter_chain: z.number().int().nonnegative(),
+  emitter_address: z.string(),
+  sequence: z.number().int().nonnegative(),
+});
+
+export const cctpMessageIdSchema = z.object({
+  protocol: z.literal("cctp"),
+  source_domain: z.number().int().nonnegative(),
+  nonce: z.string(),
+});
+
+export const debridgeMessageIdSchema = z.object({
+  protocol: z.literal("debridge"),
+  order_id: z.string(),
+});
+
+export const mayanMessageIdSchema = z.object({
+  protocol: z.literal("mayan"),
+  order_hash: z.string(),
+});
+
 /**
- * Protocol-tagged message identity. The backend serialises its `MessageId` enum
- * with `#[serde(tag = "protocol", rename_all = "snake_case")]`, so each variant
- * is discriminated by `protocol`.
+ * Protocol-tagged message identity. Unknown or future protocols (and any
+ * variant whose fields differ from the above) still parse, so a new backend
+ * protocol never turns a valid transaction into a 502.
  */
-export const messageIdSchema = z.discriminatedUnion("protocol", [
-  z.object({
-    protocol: z.literal("wormhole"),
-    emitter_chain: z.number().int().nonnegative(),
-    emitter_address: z.string(),
-    sequence: z.number().int().nonnegative(),
-  }),
+export const messageIdSchema = z.union([
+  wormholeMessageIdSchema,
+  cctpMessageIdSchema,
+  debridgeMessageIdSchema,
+  mayanMessageIdSchema,
+  z.object({ protocol: z.string() }).passthrough(),
 ]);
 
 export type MessageId = z.infer<typeof messageIdSchema>;
 
 export const transferViewSchema = z.object({
   protocol: z.string(),
+  program: z.string().optional(),
+  protocol_name: z.string().optional(),
   direction: directionSchema,
   via: viaSchema,
   observed_tx_hash: z.string(),
