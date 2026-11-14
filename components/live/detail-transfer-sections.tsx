@@ -24,24 +24,20 @@ export function DetailTransferSections({ detail }: { detail: DetailView }) {
         <DetailField label="Raw amount" value={detail.amountRaw} mono />
       </DetailSection>
 
-      <DetailSection title="Wormhole message">
-        <DetailField
-          label="Emitter chain"
-          value={detail.message?.emitterChain ?? null}
-        />
-        <DetailField
-          label="Emitter address"
-          value={detail.message?.emitterAddress ?? null}
-          truncate
-          mono
-          copy
-        />
-        <DetailField
-          label="Sequence"
-          value={detail.message?.sequence ?? null}
-          mono
-        />
-      </DetailSection>
+      {detail.message ? (
+        <DetailSection title={detail.message.title}>
+          {detail.message.fields.map((field) => (
+            <DetailField
+              key={field.label}
+              label={field.label}
+              value={field.value}
+              mono={field.mono}
+              truncate={field.truncate}
+              copy={field.copy}
+            />
+          ))}
+        </DetailSection>
+      ) : null}
 
       {bridgeEvent ? (
         <DetailSection title="Bridge event">
