@@ -32,12 +32,11 @@ inlined at build time, so redeploy after changing any of them.
 | Variable | Scope | Notes |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | public | Canonical origin for metadata and JSON-LD. |
-| `NEXT_PUBLIC_HERMIT_WS_URL` | public | Live feed WebSocket (`/api/v1/transactions/stream`). Must be `wss:` in production. |
-| `NEXT_PUBLIC_HERMIT_API_URL` | public | Indexer origin added to the CSP `connect-src`. Must be `https:` in production. |
 | `API_BASE_URL` | server-only | Indexer origin reached by `app/api/*` route handlers. Never shipped to the browser. |
 | `API_TIMEOUT_MS` | server-only | Timeout for proxied indexer requests, in milliseconds. |
 
-The public origins are also added to the CSP `connect-src` in `proxy.ts`.
+The browser only calls this app's own `/api/*` route handlers, so the CSP
+`connect-src` in `proxy.ts` is `'self'` outside development.
 
 ## Routes
 
@@ -46,20 +45,23 @@ The public origins are also added to the CSP `connect-src` in `proxy.ts`.
   first.
   - Search a Solana signature to open its detail page.
   - 15 rows per page; the page lives in the URL as `?page=N`, so browser back
-    and forward keep the position. Out-of-range pages clamp to the last page.
-  - The WebSocket and the entry store live in `LiveProvider`, mounted in the
-    root layout. Opening `/txs` starts the stream; navigating away keeps it
-    connected for the rest of the session.
-  - Up to 500 entries are kept, de-duplicated by transaction hash. A repeat for
-    the same hash replaces the frame (for example `Pending` → `Completed`) while
-    keeping the original `receivedAt`, so the elapsed timer does not reset.
-  - The store is mirrored to `sessionStorage` and rehydrated on reload.
-  - Reconnects with capped exponential backoff (1s → 15s) plus jitter.
-  - The collapsed row and the detail page share one model: time, source tx,
-    amount, route, protocol and status.
+    and forward keep the position.
+  - The table is fed by `GET /api/v2/transfers` through our `/api/transfers`
+    proxy. The newest page is polled every five seconds; polling pauses while
+    the tab is hidden.
+  - Older pages are fetched with the backend's opaque `next_cursor`, so the
+    feed keeps cursor pagination instead of an offset.
+  - Up to 500 entries are kept, de-duplicated by `observed_tx_hash` and
+    `event_index`. A repeat for the same transfer replaces the row in place, so
+    an enrichment update (for example `Pending` → `Completed`) is reflected.
+  - The Protocol column shows the backend's `protocol_name` (`Portal`,
+    `Portal NFT`, `NTT`, `CCTP`, `deBridge`, `Mayan`), with a fallback that
+    rebuilds it from `protocol` and `program` for older responses.
+  - The collapsed row shows transaction hash, amount, route, protocol and
+    status. The Time column uses `first_seen_at` or `updated_at` when the list
+    item carries one; otherwise it shows `—` rather than a made-up value.
 - `/txs/[hash]` — per-transaction dashboard with overview, route, source,
-  destination, token and amount, Wormhole message, bridge event and raw payload
-  sections. It reads the live store first and falls back to
-  `GET /api/analyse` (our proxy) for direct links and hard refreshes, so the
-  detail is identical whether the transfer came from the API or the live stream.
+  destination, token and amount, protocol message and raw payload sections.
+  It reads `GET /api/analyse` (our proxy), so direct links and hard refreshes
+  always render the full v2 response.
 - `/docs` — documentation.

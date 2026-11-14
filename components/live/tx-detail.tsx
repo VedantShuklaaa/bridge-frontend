@@ -6,12 +6,10 @@ import { useNow } from "@/hooks/use-now";
 import { fetchAnalysis } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import type { TransactionResponse } from "@/lib/api/schemas";
-import { detailFromEntry, detailFromResponse } from "@/lib/detail";
+import { detailFromResponse } from "@/lib/detail";
 import { shortHash } from "@/lib/format";
-import { findLiveEntry } from "@/lib/live-store";
 import { DetailContent } from "./detail-content";
 import { DetailFallback } from "./detail-fallback";
-import { useLive } from "./live-provider";
 
 type RequestState = {
   attempt: number;
@@ -26,21 +24,12 @@ type FetchedState = {
 
 export function TxDetail({ hash }: { hash: string }) {
   const router = useRouter();
-  const { getByHash } = useLive();
-  const entry = getByHash(hash);
-
   const [attempt, setAttempt] = useState(0);
   const [request, setRequest] = useState<RequestState | null>(null);
   const [fetched, setFetched] = useState<FetchedState | null>(null);
   const now = useNow();
 
   useEffect(() => {
-    // The feed may already hold this hash; the extra lookup avoids a redundant
-    // request while the global snapshot is still arriving.
-    if (entry || findLiveEntry(hash)) {
-      return;
-    }
-
     const controller = new AbortController();
 
     fetchAnalysis(hash, controller.signal)
@@ -70,15 +59,11 @@ export function TxDetail({ hash }: { hash: string }) {
       });
 
     return () => controller.abort();
-  }, [attempt, entry, hash]);
+  }, [attempt, hash]);
 
   const fetchedResponse =
     fetched !== null && fetched.attempt === attempt ? fetched.response : null;
-  const detail = entry
-    ? detailFromEntry(entry)
-    : fetchedResponse
-      ? detailFromResponse(fetchedResponse)
-      : null;
+  const detail = fetchedResponse ? detailFromResponse(fetchedResponse) : null;
   const current = request !== null && request.attempt === attempt ? request : null;
 
   function goBack() {

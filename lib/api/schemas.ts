@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { streamFrameSchema } from "@/types/hermit";
 
 /**
  * Schemas for `GET /api/v2/transactions/analyse` (bridgeIndexer
@@ -117,6 +116,12 @@ export const transferViewSchema = z.object({
   amount_raw: z.string().nullable(),
   amount_formatted: z.string().nullable(),
   status: transferStatusSchema,
+  /**
+   * Optional epoch-millisecond timestamps. The list shape does not always
+   * include them; when it does, the feed uses them for its Time column.
+   */
+  first_seen_at: z.number().int().nonnegative().optional(),
+  updated_at: z.number().int().nonnegative().optional(),
 });
 
 export type TransferView = z.infer<typeof transferViewSchema>;
@@ -140,27 +145,16 @@ export const transactionResponseSchema = z.object({
 export type TransactionResponse = z.infer<typeof transactionResponseSchema>;
 
 /**
- * `GET /api/v2/transfers/live` — the bounded, globally shared snapshot.
+ * `GET /api/v2/transfers` — keyset-paginated transfers, newest first.
  *
- * Each item is the same frame the WebSocket broadcasts, plus optional
- * `first_seen_at` / `updated_at` epoch-millisecond timestamps. `server_time` is
- * also epoch milliseconds and is used to correct for clock skew between the
- * indexer and the browser.
+ * Items are `TransferView`, the same shape `/api/v2/transactions/analyse`
+ * returns. Unknown protocols and `message_id` variants are tolerated by
+ * `transferViewSchema`, so a new backend protocol never makes the whole page
+ * unreadable.
  */
-export const liveSnapshotSchema = z.object({
-  items: z.array(z.unknown()).transform((raw) =>
-    raw.flatMap((item) => {
-      const parsed = streamFrameSchema.safeParse(item);
-      if (!parsed.success) {
-        console.warn("live: skipped invalid item", parsed.error.issues[0]?.path);
-        return [];
-      }
-      return [parsed.data];
-    }),
-  ),
+export const transferListSchema = z.object({
+  items: z.array(transferViewSchema),
   next_cursor: z.string().nullable(),
-  total: z.number().int().nonnegative(),
-  server_time: z.number().int().nonnegative(),
 });
 
-export type LiveSnapshot = z.infer<typeof liveSnapshotSchema>;
+export type TransferList = z.infer<typeof transferListSchema>;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { liveSnapshotSchema } from "@/lib/api/schemas";
+import { transferListSchema } from "@/lib/api/schemas";
 import { serverConfig } from "@/lib/config";
 import { createRateLimiter } from "@/lib/security";
 
@@ -9,7 +9,6 @@ const DEFAULT_LIMIT = 100;
 const MAX_CURSOR_LENGTH = 512;
 
 const NO_STORE = "no-store";
-const LIVE_CACHE = "public, s-maxage=2, stale-while-revalidate=10";
 
 // Per-process only: resets on deploy and is not shared between instances.
 // TODO(scale): move to a shared store (Redis/Upstash) before horizontal scale.
@@ -29,11 +28,22 @@ function errorResponse(
   );
 }
 
-/** Best-effort client identity behind a proxy; never trusted for anything else. */
-function clientKey(request: Request): string {
+/** The browser's address behind whatever proxy fronts the app. */
+function clientIp(request: Request): string | null {
   const forwarded = request.headers.get("x-forwarded-for");
   const first = forwarded?.split(",")[0]?.trim();
-  return first || request.headers.get("x-real-ip")?.trim() || "anonymous";
+  const real = request.headers.get("x-real-ip")?.trim();
+
+  return first || real || null;
+}
+
+/**
+ * Best-effort identity for the local limiter. Only the IP is forwarded to the
+ * indexer, so its own per-IP limit applies to each visitor rather than to this
+ * server.
+ */
+function clientKey(request: Request): string {
+  return clientIp(request) ?? "anonymous";
 }
 
 /** Reads at most `maxBytes`; returns null when the body exceeds the cap. */
@@ -122,9 +132,9 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const limit = parseLimit(searchParams.get("limit"));
-  const before = parseCursor(searchParams.get("before"));
+  const cursor = parseCursor(searchParams.get("cursor"));
 
-  if (limit === null || before === null) {
+  if (limit === null || cursor === null) {
     return errorResponse(400, "Invalid request");
   }
 
@@ -136,17 +146,25 @@ export async function GET(request: Request) {
 
   try {
     const params = new URLSearchParams({ limit: String(limit) });
-    if (before !== undefined) {
-      params.set("before", before);
+    if (cursor !== undefined) {
+      params.set("cursor", cursor);
+    }
+
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    const ip = clientIp(request);
+    if (ip !== null) {
+      headers["x-forwarded-for"] = ip;
     }
 
     let upstream: Response;
     try {
       upstream = await fetch(
-        `${serverConfig.apiBaseUrl}/api/v2/transfers/live?${params.toString()}`,
+        `${serverConfig.apiBaseUrl}/api/v2/transfers?${params.toString()}`,
         {
           cache: "no-store",
-          headers: { Accept: "application/json" },
+          headers,
           signal: controller.signal,
         },
       );
@@ -162,12 +180,12 @@ export async function GET(request: Request) {
       }
 
       if (upstream.status === 429) {
-        const headers: Record<string, string> = {};
+        const limitedHeaders: Record<string, string> = {};
         const retryAfter = upstream.headers.get("retry-after")?.trim();
         if (retryAfter && /^\d{1,6}$/.test(retryAfter)) {
-          headers["Retry-After"] = retryAfter;
+          limitedHeaders["Retry-After"] = retryAfter;
         }
-        return errorResponse(429, "Too many requests", headers);
+        return errorResponse(429, "Too many requests", limitedHeaders);
       }
 
       if (upstream.status >= 500) {
@@ -197,13 +215,13 @@ export async function GET(request: Request) {
       return errorResponse(502, "Unexpected upstream response");
     }
 
-    const parsed = liveSnapshotSchema.safeParse(body);
+    const parsed = transferListSchema.safeParse(body);
     if (!parsed.success) {
       return errorResponse(502, "Unexpected upstream response");
     }
 
     return NextResponse.json(parsed.data, {
-      headers: { "Cache-Control": LIVE_CACHE },
+      headers: { "Cache-Control": NO_STORE },
     });
   } finally {
     clearTimeout(timer);

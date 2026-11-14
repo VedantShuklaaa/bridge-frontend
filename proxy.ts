@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { publicConfig } from "./lib/config.public";
 
 /**
  * Per-request nonce-based CSP. Every page is dynamically rendered so the nonce
@@ -10,12 +9,8 @@ export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const isDev = process.env.NODE_ENV === "development";
 
-  // Only same-origin traffic and the exact configured stream and API origins.
-  const connectSources = new Set([
-    "'self'",
-    publicConfig.wsOrigin,
-    publicConfig.apiOrigin,
-  ]);
+  // The browser only calls this app's own `/api/*` route handlers.
+  const connectSources = new Set(["'self'"]);
   if (isDev) {
     const wsScheme = request.nextUrl.protocol === "https:" ? "wss" : "ws";
     connectSources.add(`${wsScheme}://${request.nextUrl.host}`);

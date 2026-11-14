@@ -121,8 +121,8 @@ Shared: Postgres, Redis`,
 				id: "message-identity",
 				title: "Message identity",
 				blocks: [
-					p("`MessageId` is an enum with one variant per protocol (only `Wormhole` today). `MessageId::key()` is the canonical string stored as `bridge_transfers.message_key`."),
-					p("Identities differ per protocol: Wormhole emitter and sequence, CCTP domain and nonce, LayerZero GUID, deBridge order ID."),
+					p("`MessageId` is protocol-tagged, with one variant per wired protocol: Wormhole, CCTP, deBridge and Mayan. `MessageId::key()` is the canonical string stored as `bridge_transfers.message_key`."),
+					p("Identities differ per protocol: Wormhole emitter and sequence, CCTP source domain and nonce, deBridge order ID, Mayan order hash, and a LayerZero GUID where that adapter lands."),
 				],
 			},
 			{

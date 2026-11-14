@@ -4,9 +4,15 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useNow } from "@/hooks/use-now";
-import { formatChain, formatElapsed, shortHash } from "@/lib/format";
+import type { TransferStatus, TransferView } from "@/lib/api/schemas";
+import { formatElapsed, shortHash } from "@/lib/format";
+import { formatChainView, protocolDisplayName } from "@/lib/protocol";
+import {
+  transferAmountLabel,
+  transferHash,
+  transferTimestamp,
+} from "@/lib/transfers";
 import { cn } from "@/lib/utils";
-import type { BridgeStatus, StoreEntry } from "@/types/hermit";
 
 /**
  * The summary row shared by the column ribbon and every feed row. Six equal
@@ -15,53 +21,20 @@ import type { BridgeStatus, StoreEntry } from "@/types/hermit";
 export const TXS_COLUMNS =
   "grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-6 md:items-center md:gap-x-4";
 
-const statusShape: Record<BridgeStatus, string> = {
+/** Shapes keep status readable without relying on colour. */
+const statusShape: Record<TransferStatus, string> = {
   Completed: "rounded-full bg-current",
   Pending: "rounded-full border border-current bg-transparent",
   Detected: "rounded-[2px] border border-current bg-transparent",
+  Failed: "rounded-[2px] bg-current",
+  Refunded: "rounded-full border border-dashed border-current bg-transparent",
 };
 
-function amountLabel(entry: StoreEntry): string | null {
-  const transfer = entry.frame.bridge_transfer;
-
-  if (transfer === null || transfer.amount_formatted === null) {
-    return null;
-  }
-
-  return transfer.token_symbol === null
-    ? transfer.amount_formatted
-    : `${transfer.amount_formatted} ${transfer.token_symbol}`;
-}
-
-export function TxsRow({
-  entry,
-  clockOffsetMs,
-}: {
-  entry: StoreEntry;
-  clockOffsetMs: number | null;
-}) {
+export function TxsRow({ transfer }: { transfer: TransferView }) {
   const now = useNow();
-  const { frame, receivedAt } = entry;
-  const transfer = frame.bridge_transfer;
-
-  if (transfer === null) {
-    return null;
-  }
-
-  const sourceHash = transfer.source_tx_hash ?? frame.hash;
-  const firstSeenAt = frame.first_seen_at;
-  // `first_seen_at` is on the indexer's clock; subtract the measured skew to
-  // compare it with this browser's clock. Without a successful snapshot there
-  // is no skew measurement, so fall back to when this browser received the row.
-  const detectedAt =
-    firstSeenAt !== undefined && clockOffsetMs !== null
-      ? firstSeenAt - clockOffsetMs
-      : receivedAt > 0
-        ? receivedAt
-        : frame.timestamp !== null
-          ? frame.timestamp * 1000
-          : now;
-  const amount = amountLabel(entry);
+  const hash = transferHash(transfer);
+  const amount = transferAmountLabel(transfer);
+  const seenAt = transferTimestamp(transfer);
 
   return (
     <motion.li
@@ -73,24 +46,32 @@ export function TxsRow({
       className="border-b border-border last:border-b-0"
     >
       <Link
-        href={`/txs/${encodeURIComponent(frame.hash)}`}
+        href={`/txs/${encodeURIComponent(transfer.observed_tx_hash)}`}
         className={cn(
           "grid rounded-lg px-3 py-3 text-sm transition-colors hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:active:bg-muted",
           TXS_COLUMNS,
         )}
       >
         <Cell label="Time">
-          <span className="tabular text-xs text-muted-foreground">
-            {formatElapsed(detectedAt, now)}
+          {/*
+           * Use the indexer's timestamp when the list item carries one. If it
+           * does not, show nothing rather than inventing a time.
+           */}
+          <span
+            className="tabular text-xs text-muted-foreground"
+            title={
+              seenAt === null
+                ? "The transfers list does not carry a timestamp"
+                : undefined
+            }
+          >
+            {seenAt === null ? "—" : formatElapsed(seenAt, now)}
           </span>
         </Cell>
 
-        <Cell label="Source tx">
-          <span
-            title={sourceHash}
-            className="block truncate font-mono text-xs"
-          >
-            {shortHash(sourceHash)}
+        <Cell label="Transaction">
+          <span title={hash} className="block truncate font-mono text-xs">
+            {shortHash(hash)}
           </span>
         </Cell>
 
@@ -105,16 +86,18 @@ export function TxsRow({
 
         <Cell label="Route">
           <span className="block truncate whitespace-nowrap">
-            {formatChain(transfer.source_chain)}
+            {formatChainView(transfer.source)}
             <span aria-hidden className="px-1 text-muted-foreground">
               →
             </span>
-            {formatChain(transfer.destination_chain)}
+            {formatChainView(transfer.destination)}
           </span>
         </Cell>
 
         <Cell label="Protocol">
-          <span className="block truncate">Wormhole</span>
+          <span className="block truncate">
+            {protocolDisplayName(transfer)}
+          </span>
         </Cell>
 
         <Cell label="Status">

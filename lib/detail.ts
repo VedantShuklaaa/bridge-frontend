@@ -3,12 +3,10 @@ import {
   debridgeMessageIdSchema,
   mayanMessageIdSchema,
   wormholeMessageIdSchema,
-  type ChainView,
   type TransactionResponse,
   type TransferView,
 } from "@/lib/api/schemas";
-import { formatChain } from "@/lib/format";
-import type { BridgeEvent, ChainId, StoreEntry } from "@/types/hermit";
+import { formatChainView, protocolDisplayName } from "@/lib/protocol";
 
 export type DetailMessageField = {
   label: string;
@@ -24,10 +22,7 @@ export type DetailMessage = {
   fields: DetailMessageField[];
 };
 
-/**
- * One presentation model for both sources: a live `StreamFrame` and the v2
- * `TransactionResponse` fetched for a direct link.
- */
+/** The presentation model for a v2 `TransactionResponse`. */
 export type DetailView = {
   hash: string;
   txStatus: string;
@@ -52,38 +47,8 @@ export type DetailView = {
   amountFormatted: string | null;
   amountRaw: string | null;
   message: DetailMessage | null;
-  bridgeEvent: BridgeEvent | null;
   raw: unknown;
 };
-
-function directionFor(source: ChainId, destination: ChainId): string {
-  return destination === "Solana" && source !== "Solana"
-    ? "Inbound"
-    : "Outbound";
-}
-
-/** Prefer the backend's display name; fall back for older responses. */
-function protocolLabel(transfer: TransferView): string {
-  if (transfer.protocol_name) {
-    return transfer.protocol_name;
-  }
-
-  return transfer.protocol === "wormhole" ? "Wormhole" : transfer.protocol;
-}
-
-const CHAIN_ID_NOUN: Record<string, string> = {
-  wormhole: "Wormhole chain",
-  cctp: "CCTP domain",
-  debridge: "deBridge chain",
-};
-
-function formatChainView(view: ChainView): string {
-  if (view.chain) {
-    return view.chain.name;
-  }
-
-  return `Unknown (${CHAIN_ID_NOUN[view.protocol] ?? view.protocol} ${view.id})`;
-}
 
 function wormholeMessage(
   emitterChain: string,
@@ -170,48 +135,6 @@ function messageFromTransfer(transfer: TransferView): DetailMessage | null {
   return null;
 }
 
-export function detailFromEntry(entry: StoreEntry): DetailView {
-  const frame = entry.frame;
-  const transfer = frame.bridge_transfer;
-
-  return {
-    hash: frame.hash,
-    txStatus: frame.status,
-    slot: frame.slot,
-    timestamp: frame.timestamp,
-    signer: frame.signer,
-    feeLamports: frame.fee_lamports,
-    sourceChain: transfer ? formatChain(transfer.source_chain) : null,
-    destinationChain: transfer ? formatChain(transfer.destination_chain) : null,
-    direction: transfer
-      ? directionFor(transfer.source_chain, transfer.destination_chain)
-      : null,
-    // Live frames are Wormhole-shaped and carry no display name yet.
-    protocol: "Wormhole",
-    transferStatus: transfer?.status ?? null,
-    transferCount: transfer ? 1 : 0,
-    sourceTxHash: transfer?.source_tx_hash ?? null,
-    sourceWallet: transfer?.source_wallet ?? null,
-    sourceExplorerUrl: transfer?.source_explorer_url ?? null,
-    destinationTxHash: transfer?.destination_tx_hash ?? null,
-    destinationWallet: transfer?.destination_wallet ?? null,
-    destinationExplorerUrl: transfer?.destination_explorer_url ?? null,
-    tokenAddress: transfer?.token ?? null,
-    tokenSymbol: transfer?.token_symbol ?? null,
-    amountFormatted: transfer?.amount_formatted ?? null,
-    amountRaw: transfer?.amount ?? null,
-    message: transfer
-      ? wormholeMessage(
-        String(transfer.message_id.emitter_chain),
-        transfer.message_id.emitter_address,
-        String(transfer.message_id.sequence),
-      )
-      : null,
-    bridgeEvent: frame.bridge_event,
-    raw: frame,
-  };
-}
-
 export function detailFromResponse(response: TransactionResponse): DetailView {
   const transfer = response.transfers[0] ?? null;
 
@@ -227,7 +150,7 @@ export function detailFromResponse(response: TransactionResponse): DetailView {
       ? formatChainView(transfer.destination)
       : null,
     direction: transfer?.direction ?? null,
-    protocol: transfer ? protocolLabel(transfer) : "Wormhole",
+    protocol: transfer ? protocolDisplayName(transfer) : "—",
     transferStatus: transfer?.status ?? null,
     transferCount: response.transfers.length,
     sourceTxHash: transfer?.source_tx_hash ?? null,
@@ -241,7 +164,6 @@ export function detailFromResponse(response: TransactionResponse): DetailView {
     amountFormatted: transfer?.amount_formatted ?? null,
     amountRaw: transfer?.amount_raw ?? null,
     message: transfer ? messageFromTransfer(transfer) : null,
-    bridgeEvent: null,
     raw: response,
   };
 }

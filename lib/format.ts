@@ -1,10 +1,3 @@
-import type { ChainId } from "@/types/hermit";
-
-/** The chain label, or `Unknown(<id>)` for the object variant. */
-export function formatChain(chain: ChainId): string {
-  return typeof chain === "string" ? chain : `Unknown(${chain.Unknown})`;
-}
-
 /** Trims a long identifier to `head…tail`. */
 export function shortHash(value: string, head = 6, tail = 6): string {
   if (value.length <= head + tail + 1) {

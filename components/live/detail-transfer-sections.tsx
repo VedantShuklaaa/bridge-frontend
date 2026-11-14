@@ -7,8 +7,6 @@ import { DetailSection, sectionVariants } from "./detail-section";
 import { RawJson } from "./raw-json";
 
 export function DetailTransferSections({ detail }: { detail: DetailView }) {
-  const bridgeEvent = detail.bridgeEvent;
-
   return (
     <>
       <DetailSection title="Token & amount">
@@ -36,30 +34,6 @@ export function DetailTransferSections({ detail }: { detail: DetailView }) {
               copy={field.copy}
             />
           ))}
-        </DetailSection>
-      ) : null}
-
-      {bridgeEvent ? (
-        <DetailSection title="Bridge event">
-          <DetailField
-            label="Sequence"
-            value={String(bridgeEvent.sequence)}
-            mono
-          />
-          <DetailField
-            label="Emitter chain"
-            value={bridgeEvent.emitter_chain}
-            mono
-          />
-          <DetailField
-            label="Emitter address"
-            value={bridgeEvent.emitter_address}
-            truncate
-            mono
-            copy
-          />
-          <DetailField label="Target chain" value={bridgeEvent.target_chain} />
-          <DetailField label="Amount" value={bridgeEvent.amount} mono />
         </DetailSection>
       ) : null}
 

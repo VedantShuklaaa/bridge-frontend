@@ -13,7 +13,7 @@ export const PIPELINE = [
   { id: "02", title: "Queue", detail: "Candidates go to a Redis Stream. Consumer groups and XAUTOCLAIM give at-least-once delivery without a second system to run." },
   { id: "03", title: "Decode", detail: "Workers fetch the transaction and run a pure protocol adapter: classify, decode, or reject with a reason." },
   { id: "04", title: "Persist", detail: "Stored as Detected from on-chain data alone. Upserts on (protocol, message_key) make redelivery harmless." },
-  { id: "05", title: "Enrich", detail: "WormholeScan fills in the destination tx and final status in the background. It never gates persistence." },
+  { id: "05", title: "Enrich", detail: "Protocol APIs such as WormholeScan fill in the destination tx and final status in the background. They never gate persistence." },
   { id: "06", title: "Serve", detail: "Versioned REST, a keyset-paginated transfer list and a live WebSocket stream." },
 ] as const;
 
@@ -36,7 +36,7 @@ export const METRICS_NOTE =
 export const FEATURES = [
   { title: "Chain first", text: "A transfer is persisted from Solana data alone. WormholeScan only enriches it, so an outage upstream never blocks or loses a transfer." },
   { title: "Both directions", text: "Sends out of Solana and redeems into it, decoded from the posted VAA account with an in-house parser." },
-  { title: "Protocol adapters", text: "One pure adapter per protocol declares its programs and decodes or rejects. Wormhole Token Bridge today, one protocol per phase after." },
+  { title: "Protocol adapters", text: "One pure adapter per protocol declares its programs and decodes or rejects. Wormhole (Portal and NTT), CCTP, deBridge and Mayan today, one protocol per phase after." },
   { title: "Exactly-once writes", text: "At-least-once delivery plus idempotent upserts. Transient failures stay pending, permanent ones go to a dead-letter stream." },
   { title: "Self-healing stream", text: "Watchdog, checkpoint rewind, concurrent backfill, and a periodic reconcile poll as the safety net behind the WebSocket." },
   { title: "Unknown is not an error", text: "An unrecognised chain is stored as unresolved, never dropped, and resolves later when the registry learns it." },
