@@ -71,7 +71,7 @@ WS  /api/v1/transactions/stream`,
 						"List parameters",
 					),
 					p("Pagination is keyset over `(created_at DESC, id DESC)`. There is no `OFFSET`, and rows with identical `created_at` are still visited exactly once. The ordering key is the time the indexer stored the row, not the chain's block time, so a backfilled transfer appears where it was inserted. There is no cache on this path; every request reads Postgres."),
-					note("A 400 `BAD_REQUEST` covers an invalid `limit`, cursor or timestamp, an unknown chain, direction or status, and `from >= to`. The v2 transfer model still has one `message_id` shape (`wormhole`), so a page containing a row for another protocol fails with `422 NORMALISATION_FAILED`."),
+					note("A 400 `BAD_REQUEST` covers an invalid `limit`, cursor or timestamp, an unknown chain, direction or status, and `from >= to`. Each item carries its protocol's own `message_id` shape (Wormhole, CCTP, deBridge, Mayan), and the frontend tolerates a new variant instead of failing the page."),
 				],
 			},
 			{

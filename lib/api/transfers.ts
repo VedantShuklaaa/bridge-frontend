@@ -1,20 +1,24 @@
 import { publicConfig } from "@/lib/config.public";
 import { ApiError, apiErrorFromStatus } from "./errors";
-import { liveSnapshotSchema, type LiveSnapshot } from "./schemas";
+import { transferListSchema, type TransferList } from "./schemas";
 
-const SNAPSHOT_TIMEOUT_MS = 5_000;
+const LIST_TIMEOUT_MS = 8_000;
 const DEFAULT_LIMIT = 100;
 
 /**
- * Calls our own `/api/live` route handler, never the indexer directly.
+ * Calls our own `/api/transfers` route handler, never the indexer directly.
  *
  * In the browser the request stays on the current origin, prefixed with the
  * app's `basePath` so it reaches the route handler. On the server the route
  * needs an absolute URL.
  */
-function liveUrl(limit: number): string {
+function transfersUrl(limit: number, cursor: string | null): string {
   const params = new URLSearchParams({ limit: String(limit) });
-  const path = `/api/live?${params.toString()}`;
+  if (cursor !== null) {
+    params.set("cursor", cursor);
+  }
+
+  const path = `/api/transfers?${params.toString()}`;
 
   if (typeof window !== "undefined") {
     // Inlined at build time by Next from `basePath` in next.config.ts.
@@ -48,32 +52,29 @@ async function errorCode(response: Response): Promise<string | undefined> {
   }
 }
 
-/**
- * A shared cache may serve a response generated up to `s-maxage` seconds ago.
- * `server_time` is from that moment, so add the response's `Age` before using
- * it as the current server clock.
- */
-function cacheAgeMs(response: Response): number {
-  const age = Number.parseInt(response.headers.get("age") ?? "", 10);
-
-  return Number.isFinite(age) && age > 0 ? age * 1000 : 0;
-}
+export type FetchTransfersOptions = {
+  limit?: number;
+  /** `next_cursor` from the previous page; `null` starts at the newest row. */
+  cursor?: string | null;
+  signal?: AbortSignal;
+};
 
 /**
- * Fetches the bounded global snapshot. Any failure throws an `ApiError`; the
- * provider decides whether to retry or silently fall back to the WebSocket.
+ * Fetches one keyset page of transfers. Any failure throws an `ApiError`; the
+ * feed keeps its current rows and retries on the next poll.
  */
-export async function fetchLiveSnapshot(
-  signal?: AbortSignal,
+export async function fetchTransfers({
   limit = DEFAULT_LIMIT,
-): Promise<LiveSnapshot> {
+  cursor = null,
+  signal,
+}: FetchTransfersOptions = {}): Promise<TransferList> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), SNAPSHOT_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), LIST_TIMEOUT_MS);
   const onAbort = () => controller.abort();
 
   if (signal?.aborted) {
     clearTimeout(timer);
-    throw new ApiError("timeout", "The live snapshot request was cancelled.");
+    throw new ApiError("timeout", "The transfers request was cancelled.");
   }
 
   signal?.addEventListener("abort", onAbort, { once: true });
@@ -82,19 +83,19 @@ export async function fetchLiveSnapshot(
     let response: Response;
 
     try {
-      response = await fetch(liveUrl(limit), {
+      response = await fetch(transfersUrl(limit, cursor), {
         cache: "no-store",
         headers: { Accept: "application/json" },
         signal: controller.signal,
       });
     } catch (error) {
       if (controller.signal.aborted) {
-        throw new ApiError("timeout", "The live snapshot took too long.", {
+        throw new ApiError("timeout", "The transfers request took too long.", {
           cause: error,
         });
       }
 
-      throw new ApiError("network", "Could not reach the live snapshot.", {
+      throw new ApiError("network", "Could not reach the transfers feed.", {
         cause: error,
       });
     }
@@ -107,29 +108,21 @@ export async function fetchLiveSnapshot(
     try {
       body = await response.json();
     } catch (error) {
-      throw new ApiError(
-        "bad_response",
-        "The live snapshot was invalid.",
-        { cause: error, status: response.status },
-      );
+      throw new ApiError("bad_response", "The transfers feed was invalid.", {
+        cause: error,
+        status: response.status,
+      });
     }
 
-    const parsed = liveSnapshotSchema.safeParse(body);
+    const parsed = transferListSchema.safeParse(body);
     if (!parsed.success) {
-      throw new ApiError(
-        "bad_response",
-        "The live snapshot was invalid.",
-        { cause: parsed.error, status: response.status },
-      );
+      throw new ApiError("bad_response", "The transfers feed was invalid.", {
+        cause: parsed.error,
+        status: response.status,
+      });
     }
 
-    return {
-      ...parsed.data,
-      // Only bridge transfers belong in the feed; the socket hook applies the
-      // same rule to WS frames.
-      items: parsed.data.items.filter((item) => item.bridge_transfer !== null),
-      server_time: parsed.data.server_time + cacheAgeMs(response),
-    };
+    return parsed.data;
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener("abort", onAbort);

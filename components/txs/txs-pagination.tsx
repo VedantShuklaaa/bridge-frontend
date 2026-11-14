@@ -7,14 +7,18 @@ function pageHref(page: number): string {
 export function TxsPagination({
   page,
   totalPages,
+  hasMore = false,
 }: {
   page: number;
+  /** Pages already loaded; the cursor may still hold older rows. */
   totalPages: number;
+  hasMore?: boolean;
 }) {
   const linkClass =
     "rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:active:bg-muted";
   const disabledClass =
     "rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground/50";
+  const canGoNext = page < totalPages || hasMore;
 
   return (
     <nav
@@ -33,9 +37,10 @@ export function TxsPagination({
 
       <span className="tabular text-xs text-muted-foreground">
         page {page} of {totalPages}
+        {hasMore ? "+" : ""}
       </span>
 
-      {page < totalPages ? (
+      {canGoNext ? (
         <Link href={pageHref(page + 1)} className={linkClass}>
           Next →
         </Link>

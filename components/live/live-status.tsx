@@ -1,13 +1,12 @@
-import type { LiveConnectionStatus } from "@/types/hermit";
+import type { FeedStatus } from "@/hooks/use-live-transfers";
 
-const LABEL: Record<LiveConnectionStatus, string> = {
+const LABEL: Record<FeedStatus, string> = {
   connecting: "connecting",
   open: "live",
   reconnecting: "reconnecting",
-  closed: "disconnected",
 };
 
-export function LiveStatusBadge({ status }: { status: LiveConnectionStatus }) {
+export function LiveStatusBadge({ status }: { status: FeedStatus }) {
   const isOpen = status === "open";
   const isWaiting = status === "connecting" || status === "reconnecting";
 

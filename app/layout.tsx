@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { JsonLd } from "@/components/layout/json-ld";
 import { Navbar } from "@/components/layout/navbar/navbar";
 import { Providers } from "@/components/layout/providers";
-import { LiveProvider } from "@/components/live/live-provider";
 import { siteConfig } from "@/lib/seo";
 import "./globals.css";
 
@@ -68,18 +67,16 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <Providers nonce={nonce}>
-          <LiveProvider>
-            <a
-              href="#content"
-              className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-100 focus:rounded-md focus:border focus:border-border focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:text-foreground"
-            >
-              Skip to content
-            </a>
-            <Navbar />
-            <main id="content" className="flex-1">
-              {children}
-            </main>
-          </LiveProvider>
+          <a
+            href="#content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-100 focus:rounded-md focus:border focus:border-border focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:text-foreground"
+          >
+            Skip to content
+          </a>
+          <Navbar />
+          <main id="content" className="flex-1">
+            {children}
+          </main>
         </Providers>
         <JsonLd />
       </body>

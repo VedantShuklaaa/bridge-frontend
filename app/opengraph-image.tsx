@@ -56,7 +56,7 @@ export default function OpengraphImage() {
           }}
         >
           <span>Solana</span>
-          <span>Wormhole Token Bridge</span>
+          <span>Portal · NTT · CCTP · deBridge · Mayan</span>
         </div>
       </div>
     ),

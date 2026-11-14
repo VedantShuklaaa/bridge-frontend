@@ -62,7 +62,7 @@ export const project: Section[] = [
 						[true, "A3. DB-backed chain registry replacing the `ChainId` enum; unresolved IDs stored, never dropped"],
 						[false, "A4. All Wormhole programs on Solana (NTT and others), one `logsSubscribe` per program ID with a checkpoint per program"],
 						[true, "A5. Chain-first detection; WormholeScan enriches and never gates persistence (A5b: destination tx fix, provider trait, background re-enrichment)"],
-						[false, "A6. Composition end to end: one transfer per message identity with `via`. `compose()` is done; the outer plus underlying test waits for a second adapter"],
+						[false, "A6. Composition end to end: one transfer per message identity with `via`. `compose()` is done; the outer plus underlying test remains"],
 						[true, "A7. Direction: Solana-outbound sends and Solana-inbound redeems both indexed"],
 						[true, "A8. Always-on ingestion with a bounded Helius budget"],
 						[true, "A9. Fixtures captured from real txs and golden tests per adapter"],
@@ -98,7 +98,7 @@ export const project: Section[] = [
 						"Write the adapter, its enrichment provider if the protocol has an API, and its chain-ID mappings for the registry.",
 						"Cover composition with any protocol already indexed (Mayan over Wormhole and CCTP, aggregators over everything).",
 					),
-					p("Candidates: Mayan (Swift, MCTP), Circle CCTP, LayerZero/Stargate, deBridge, Allbridge, Hyperlane, Chainlink CCIP, Across."),
+					p("Candidates: LayerZero/Stargate, Allbridge, Hyperlane, Chainlink CCIP, Across."),
 				],
 			},
 			{

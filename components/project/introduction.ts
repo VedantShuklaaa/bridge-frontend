@@ -33,7 +33,7 @@ export const introduction: Section[] = [
 				title: "Where it is today",
 				blocks: [
 					p("The product is moving from a Wormhole transfer indexer to a protocol-agnostic core with one adapter per bridge protocol."),
-					p("Today only the Wormhole Token Bridge is decoded. Sends out of Solana are stored chain-first and WormholeScan only enriches them. Redeems into Solana are decoded from the posted VAA account and stored as `Inbound` rows."),
+					p("Wormhole (Portal, Portal NFT and NTT), Circle CCTP, deBridge and Mayan are decoded. Sends out of Solana are stored chain-first and WormholeScan only enriches Wormhole transfers. Redeems into Solana are decoded from the posted VAA account and stored as `Inbound` rows."),
 				],
 			},
 			{
@@ -75,7 +75,7 @@ export const introduction: Section[] = [
 							["Detection", "Chain-first for Wormhole outbound. Transactions that decode to no transfer still go through the WormholeScan-gated path."],
 							["Domain model and schema", "Generalised: `bridge_transfers` identified by `(protocol, message_key)` with `direction`, `via`, raw chain references and `NUMERIC(78,0)` amounts. Wormhole fields live in `wormhole_messages`."],
 							["Chains", "DB-backed registry loaded at startup and refreshed in the background. A chain added to the database works without a deploy."],
-							["Protocol core", "`BridgeAdapter`, `ProtocolRegistry`, `compose` and the Wormhole Token Bridge adapter are wired into `analyse_tx`. Other Wormhole programs are not decoded yet."],
+							["Protocol core", "`BridgeAdapter`, `ProtocolRegistry`, `compose` and adapters for Wormhole (Portal, Portal NFT, NTT), CCTP, deBridge and Mayan are wired into `analyse_tx`."],
 							["Read path", "`/analyse` working, cache-hit throughput measured."],
 							["Destination tx resolution", "Read from the `/operations` payload, then `/global-tx` when the VAA matched but no destination tx is present. `Pending` means WormholeScan itself has no destination tx."],
 							["Enrichment", "Provider behind the `EnrichmentProvider` trait plus a supervised background pass that re-enriches open rows and fills missing origin txs."],
@@ -94,9 +94,10 @@ export const introduction: Section[] = [
 					table(
 						["Protocol", "State"],
 						[
-							["Wormhole Token Bridge", "Sends indexed chain-first, WormholeScan only enriches. Redeems into Solana decoded and stored."],
-							["Wormhole NTT and other Wormhole programs", "Planned (A4), after program IDs and layouts are verified."],
-							["Mayan (Swift, MCTP), Circle CCTP, LayerZero/Stargate, deBridge, Allbridge, Hyperlane, Chainlink CCIP, Across", "Candidates. Inclusion and order come from DefiLlama bridge volume for Solana at the start of each phase. Program IDs and layouts are verified against official docs or source before an adapter is written."],
+							["Wormhole Token Bridge (Portal)", "Sends indexed chain-first, WormholeScan only enriches. Redeems into Solana decoded and stored."],
+							["Wormhole Portal NFT and NTT", "Indexed; the protocol name distinguishes them in analysis and the live feed."],
+							["Circle CCTP, deBridge, Mayan", "Indexed, including their protocol-specific message identities in the v2 API."],
+							["LayerZero/Stargate, Allbridge, Hyperlane, Chainlink CCIP, Across", "Candidates. Inclusion and order come from DefiLlama bridge volume for Solana at the start of each phase. Program IDs and layouts are verified against official docs or source before an adapter is written."],
 						],
 						"Protocol coverage",
 					),
